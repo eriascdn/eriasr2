@@ -1,0 +1,7 @@
+name = "eriasr2"
+main = "src/index.ts"
+compatibility_date = "2022-09-13"
+
+[[r2_buckets]]
+binding = 'r2Bucket'
+bucket_name = 'r2-eriascdn'
