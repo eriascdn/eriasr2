@@ -17,6 +17,8 @@ export interface Env {
 	//
 	// Example binding to R2. Learn more at https://developers.cloudflare.com/workers/runtime-apis/r2/
 	// MY_BUCKET: R2Bucket;
+
+	r2Bucket: R2Bucket;
 }
 
 export default {
@@ -25,6 +27,65 @@ export default {
 		env: Env,
 		ctx: ExecutionContext
 	): Promise<Response> {
-		return new Response("Hello World!");
+		try {
+			if(request.method != 'GET'){
+				return new Response('Method is not allowed', {
+					status: 405
+				});	
+			}
+
+			const url = new URL(request.url);
+
+			// Construct the cache key from the cache URL
+			const cacheKey = new Request(url.toString(), request);
+			const cache = caches.default;
+
+			// Check whether the value is already available in the cache
+			// if not, you will need to fetch it from R2, and store it in the cache
+			// for future access
+			let response = await cache.match(cacheKey);
+
+			if (response) {
+				console.log(`Cache hit for: ${request.url}.`);
+				return response;
+			}
+
+			console.log('no cache')
+
+			// If not in cache, get it from R2
+			const objectKey = url.pathname.slice(1);
+			const object = await env.r2Bucket.get(objectKey);
+			
+			if (object === null) {
+				return new Response('Object not Found', {
+					status: 404
+				});
+			}
+			
+			// Set the appropriate object headers
+			const headers = new Headers();
+			object.writeHttpMetadata(headers);
+			headers.set('etag', object.httpEtag);
+
+			// Cache API respects Cache-Control headers. Setting s-max-age to 10
+			// will limit the response to be in cache for 10 seconds max
+			// Any changes made to the response here will be reflected in the cached value
+			//headers.append('Cache-Control', 's-maxage=10');
+			headers.append('Cache-Control', 's-maxage=10');
+
+			response = new Response(object.body, {
+				headers,
+			});
+		
+			// Store the fetched response as cacheKey
+			// Use waitUntil so you can return the response without blocking on
+			// writing to cache
+			ctx.waitUntil(cache.put(cacheKey, response.clone()));
+
+			return response;
+		} catch (e: any) {
+			return new Response('Error thrown ' + e.message);
+		}
+		
 	},
 };
