@@ -72,6 +72,7 @@ export default {
 			// Any changes made to the response here will be reflected in the cached value
 			//headers.append('Cache-Control', 's-maxage=10');
 			headers.append('Cache-Control', 's-maxage=10');
+			headers.append('Access-Control-Allow-Origin', '*');
 
 			response = new Response(object.body, {
 				headers,
