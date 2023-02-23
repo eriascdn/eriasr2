@@ -6,3 +6,12 @@ compatibility_date = "2022-09-13"
 binding = 'r2Bucket'
 bucket_name = 'r2-eriascdn'
 preview_bucket_name = 'r2-eriascdn'
+
+kv_namespaces = [
+  { binding = "eriasr2", preview_id = "9648ff893d9b40a69ccc80bb3e41f645" }
+]
+
+[env.production]
+kv_namespaces = [
+    { binding = "eriasr2", id = "e37e7a3bc8854d72911b81760dd29e94" }
+]
